@@ -49,7 +49,6 @@ const smsMessages = [
 
 export default function SMSPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMessages, setSelectedMessages] = useState<string[]>([]);
   const [expandedMessage, setExpandedMessage] = useState<string | null>(null);
 
   const filteredMessages = smsMessages.filter(
