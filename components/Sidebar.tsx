@@ -55,7 +55,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="h-screen w-72 border-l border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+    <aside className="flex h-screen w-72 flex-col border-l border-slate-200 bg-gradient-to-b from-slate-900 to-slate-800 text-white">
       {/* Logo */}
       <div className="border-b border-slate-700 p-6">
         <div className="text-2xl font-black tracking-tighter">VOLCA FLEXY</div>
@@ -63,7 +63,7 @@ export function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="mt-6 space-y-1 px-3">
+      <nav className="mt-6 space-y-1 overflow-y-auto px-3">
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -86,7 +86,7 @@ export function Sidebar() {
       </nav>
 
       {/* Divider */}
-      <div className="my-6 border-t border-slate-700" />
+      <div className="border-t border-slate-700" />
 
       {/* Bottom Section */}
       <div className="px-3 pb-6">
