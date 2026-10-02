@@ -6,13 +6,10 @@ import { ChevronDown } from 'lucide-react';
 type DataTableProps = {
   title: string;
   columns: string[];
-  rows: Record<string, string>[];
+  rows: Record<string, string | number | undefined>[];
 };
 
 export function DataTable({ title, columns, rows }: DataTableProps) {
-  const [sortBy, setSortBy] = useState('');
-  const [filterBy, setFilterBy] = useState('');
-
   const statusColorMap: Record<string, string> = {
     'مكتمل': 'bg-emerald-100 text-emerald-700',
     'قيد التنفيذ': 'bg-blue-100 text-blue-700',
@@ -52,7 +49,7 @@ export function DataTable({ title, columns, rows }: DataTableProps) {
             {rows.map((row, idx) => (
               <tr key={idx} className="transition hover:bg-slate-50">
                 {columns.map((col) => {
-                  const value = row[col] || '-';
+                  const value = row[col] ?? '-';
                   const isStatus = col === 'الحالة';
 
                   return (
@@ -60,7 +57,7 @@ export function DataTable({ title, columns, rows }: DataTableProps) {
                       {isStatus ? (
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                            statusColorMap[value] || 'bg-slate-100 text-slate-700'
+                            statusColorMap[String(value)] || 'bg-slate-100 text-slate-700'
                           }`}
                         >
                           {value}
