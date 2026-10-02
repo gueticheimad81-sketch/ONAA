@@ -7,19 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
+// Enums
+enum UserRole {
   USER
   ADMIN
   MODERATOR
 }
 
-enum OrderStatus {
-  PENDING_PAYMENT
-  PENDING_VERIFICATION
+enum NetworkType {
+  MOBILIS
+  OOREDOO
+  DJEZZY
+  VSAT
+}
+
+enum SMSStatus {
+  RECEIVED
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum RechargeStatus {
+  PENDING
   PROCESSING
-  DELIVERED
+  COMPLETED
   FAILED
-  REJECTED
   CANCELLED
 }
 
@@ -27,36 +40,30 @@ enum PaymentMethod {
   MANUAL
   STRIPE
   CRYPTO
-  BINANCE_PAY
+  WALLET
 }
 
-enum InventoryType {
-  DIGITAL_CODE
-  API_FULFILLMENT
-  MANUAL_ASSIGNMENT
-}
-
-enum InputType {
-  PHONE_NUMBER
-  EMAIL
-  USER_ID
-  ACCOUNT_HANDLE
-  TEXT
-}
-
+// User Models
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
   phone         String?
   name          String?
   passwordHash  String?
-  role          Role     @default(USER)
+  role          UserRole @default(USER)
   balance       Decimal  @default(0) @db.Decimal(12, 2)
+  isBanned      Boolean  @default(false)
+  banReason     String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  orders        Order[]
+  // Relations
   profile       UserProfile?
+  phoneNumbers  PhoneNumber[]
+  recharges     Recharge[]
+  smsMessages   SMSMessage[]
+  transactions  Transaction[]
+  operations    Operation[]
 
   @@map("users")
 }
@@ -67,9 +74,10 @@ model UserProfile {
   avatar             String?
   country            String?
   city               String?
-  preferences        Json?
+  phoneVerified      Boolean   @default(false)
   twoFactorEnabled   Boolean   @default(false)
   lastLogin          DateTime?
+  loginCount         Int       @default(0)
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
@@ -78,128 +86,202 @@ model UserProfile {
   @@map("user_profiles")
 }
 
-model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
-  description String?
-  icon        String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+// Phone Numbers Management
+model PhoneNumber {
+  id              String       @id @default(cuid())
+  userId          String
+  phoneNumber     String
+  network         NetworkType
+  currentBalance  Decimal      @default(0) @db.Decimal(12, 2)
+  operator        String       // e.g., "Mobilis", "Ooredoo"
+  status          String       @default("active") // active, inactive, suspended
+  displayName     String?      // nickname for the number
+  isVerified      Boolean      @default(false)
+  lastRecharge    DateTime?
+  rechargeCount   Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  products    Product[]
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recharges       Recharge[]
+  smsMessages     SMSMessage[]
+  operations      Operation[]
 
-  @@map("categories")
+  @@unique([userId, phoneNumber])
+  @@index([userId])
+  @@map("phone_numbers")
 }
 
-model Product {
-  id               String        @id @default(cuid())
-  name             String
-  slug             String        @unique
+// Recharge/Top-up Operations
+model Recharge {
+  id               String          @id @default(cuid())
+  userId           String
+  phoneNumberId    String
+  amount           Decimal         @db.Decimal(10, 2)
+  network          NetworkType
+  status           RechargeStatus  @default(PENDING)
+  paymentMethod    PaymentMethod   @default(MANUAL)
+  paymentProof     String?         // URL to uploaded proof
+  description      String?         // Admin notes
+  approvedBy       String?         // Admin user ID who approved
+  rejectionReason  String?
+  ipAddress        String?
+  userAgent        String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  completedAt      DateTime?
+
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber      PhoneNumber     @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+  transaction      Transaction?
+  logs             RechargeLog[]
+
+  @@index([userId])
+  @@index([phoneNumberId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("recharges")
+}
+
+model RechargeLog {
+  id         String   @id @default(cuid())
+  rechargeId String
+  action     String   // "created", "approved", "rejected", "completed", etc.
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  recharge   Recharge @relation(fields: [rechargeId], references: [id], onDelete: Cascade)
+
+  @@map("recharge_logs")
+}
+
+// SMS Management
+model SMSMessage {
+  id             String     @id @default(cuid())
+  userId         String
+  phoneNumberId  String
+  sender         String     // Phone number of SMS sender
+  message        String     @db.Text
+  status         SMSStatus  @default(RECEIVED)
+  isRead         Boolean    @default(false)
+  readAt         DateTime?
+  replyTo        String?    // ID of SMS being replied to
+  replyText      String?    // Reply message if any
+  replySentAt    DateTime?
+  tags           String[]   // For organizing: ["important", "promotion", etc.]
+  ipAddress      String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  user           User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber    PhoneNumber @relation(fields: [phoneNumberId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([phoneNumberId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sms_messages")
+}
+
+// Transactions (Payments & Wallet)
+model Transaction {
+  id               String          @id @default(cuid())
+  userId           String
+  rechargeId       String?         @unique
+  type             String          // "debit", "credit", "refund"
+  amount           Decimal         @db.Decimal(12, 2)
+  paymentMethod    PaymentMethod
+  status           String          @default("completed") // "pending", "completed", "failed"
   description      String?
-  categoryId       String
-  thumbnail        String?
-  images           String[]
-  inputType        InputType     @default(EMAIL)
-  inputLabel       String?
-  inputPlaceholder String?
-  requiresMetadata Boolean       @default(false)
-  inventoryType    InventoryType @default(DIGITAL_CODE)
-  apiProvider      String?
-  isFeatured       Boolean       @default(false)
-  isActive         Boolean       @default(true)
-  badge            String?
-  badgeColor       String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  reference        String?         // Payment reference number
+  stripePaymentId  String?         // Stripe transaction ID
+  balanceBefore    Decimal         @db.Decimal(12, 2)
+  balanceAfter     Decimal         @db.Decimal(12, 2)
+  metadata         Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 
-  category         Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  variants         ProductVariant[]
-  orderItems       OrderItem[]
-  licenseKeys      LicenseKey[]
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recharge         Recharge?       @relation(fields: [rechargeId], references: [id], onDelete: SetNull)
 
-  @@index([categoryId])
-  @@map("products")
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
 }
 
-model ProductVariant {
+// Operations History (Audit Trail)
+model Operation {
+  id               String   @id @default(cuid())
+  userId           String
+  phoneNumberId    String?
+  type             String   // "recharge", "sms_sent", "sms_received", "balance_update", etc.
+  action           String   // "created", "approved", "rejected", etc.
+  amount           Decimal? @db.Decimal(12, 2)
+  description      String?
+  status           String   @default("success") // "success", "failed", "pending"
+  oldValue         Json?    // Previous value
+  newValue         Json?    // New value
+  ipAddress        String?
+  userAgent        String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phoneNumber      PhoneNumber? @relation(fields: [phoneNumberId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([phoneNumberId])
+  @@index([type])
+  @@index([createdAt])
+  @@map("operations")
+}
+
+// Admin Settings & Configuration
+model AdminSettings {
+  id                  String   @id @default(cuid())
+  rechargeCommission  Decimal  @default(5) @db.Decimal(5, 2)  // Percentage
+  minRechargeAmount   Decimal  @default(500) @db.Decimal(10, 2)
+  maxRechargeAmount   Decimal  @default(100000) @db.Decimal(10, 2)
+  maintenanceMode     Boolean  @default(false)
+  maintenanceMessage  String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("admin_settings")
+}
+
+// Subscription Plans (Optional)
+model SubscriptionPlan {
   id          String   @id @default(cuid())
-  productId   String
-  name        String
-  price       Decimal  @db.Decimal(12, 2)
-  costPrice   Decimal  @db.Decimal(12, 2)
-  stockType   String   @default("digital")
-  stock       Int?     @default(0)
+  name        String   // "Basic", "Pro", "Premium"
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  duration    Int      // Days
+  features    String[] // JSON array of features
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems  OrderItem[]
-  licenseKeys LicenseKey[]
+  subscriptions Subscription[]
 
-  @@map("product_variants")
+  @@map("subscription_plans")
 }
 
-model Order {
-  id               String      @id @default(cuid())
-  userId           String?
-  status           OrderStatus @default(PENDING_PAYMENT)
-  totalAmount      Decimal     @db.Decimal(12, 2)
-  paymentMethod    PaymentMethod
-  paymentReceiptUrl String?
-  metadata         Json?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+model Subscription {
+  id             String   @id @default(cuid())
+  userId         String
+  planId         String
+  startDate      DateTime
+  endDate        DateTime
+  autoRenew      Boolean  @default(true)
+  status         String   @default("active") // "active", "expired", "cancelled"
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  user             User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items            OrderItem[]
+  user           User     @relation?
+  plan           SubscriptionPlan @relation(fields: [planId], references: [id])
 
-  @@map("orders")
-}
-
-model OrderItem {
-  id          String   @id @default(cuid())
-  orderId     String
-  productId   String
-  variantId   String?
-  quantity    Int      @default(1)
-  unitPrice   Decimal  @db.Decimal(12, 2)
-  totalPrice  Decimal  @db.Decimal(12, 2)
-  createdAt   DateTime @default(now())
-
-  order       Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product     Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant     ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-
-  @@map("order_items")
-}
-
-model LicenseKey {
-  id            String   @id @default(cuid())
-  productId     String
-  variantId     String?
-  code          String
-  isAssigned    Boolean  @default(false)
-  assignedOrderId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-
-  @@index([productId])
-  @@map("license_keys")
-}
-
-model PaymentLog {
-  id        String   @id @default(cuid())
-  orderId   String?
-  gateway   String
-  status    String
-  payload   Json?
-  createdAt DateTime @default(now())
-
-  @@map("payment_logs")
+  @@unique([userId, planId])
+  @@map("subscriptions")
 }
