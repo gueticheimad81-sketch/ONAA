@@ -1,9 +1,8 @@
-const { withHydrationOverlay } = require('@builder.io/qwik/nextjs');
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
     typedRoutes: true,
+    serverComponentsExternalPackages: ['@prisma/client'],
   },
   images: {
     remotePatterns: [
@@ -13,6 +12,12 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals.push('_http_common');
+    }
+    return config;
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

@@ -1,0 +1,78 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  :root {
+    --background: 5 14 22;
+    --foreground: 248 250 252;
+    --primary: 34 211 238;
+    --primary-foreground: 5 14 22;
+    --secondary: 71 85 105;
+    --secondary-foreground: 248 250 252;
+    --muted: 100 116 139;
+    --muted-foreground: 226 232 240;
+    --accent: 34 211 238;
+    --accent-foreground: 5 14 22;
+    --destructive: 239 68 68;
+    --destructive-foreground: 248 250 252;
+    --card: 15 23 42;
+    --card-foreground: 248 250 252;
+    --border: 30 41 59;
+    --input: 30 41 59;
+    --ring: 34 211 238;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-[#050816] text-white antialiased;
+  }
+}
+
+@layer components {
+  .neon-border {
+    @apply border border-cyan-500/20 shadow-[0_0_30px_rgba(34,211,238,0.25)];
+  }
+
+  .neon-glow {
+    @apply shadow-[0_0_30px_rgba(34,211,238,0.45)];
+  }
+
+  .gradient-primary {
+    @apply bg-gradient-to-br from-cyan-500 to-blue-600;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent;
+  }
+
+  .backdrop-blur-xl {
+    @apply backdrop-blur-[12px];
+  }
+
+  .glass-effect {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .card-dark {
+    @apply bg-slate-950/60 border border-white/10 rounded-2xl;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
