@@ -1,153 +1,160 @@
-import Link from 'next/link';
-import { Search, ShoppingCart, Sparkles, ShieldCheck, Zap, ArrowRight, Star } from 'lucide-react';
-import { ProductCatalog } from '@/components/storefront/ProductCatalog';
-import { products } from '@/lib/data';
+'use client';
 
-export default function HomePage() {
-  const featured = products.slice(0, 3);
+import { useState, useEffect } from 'react';
+import { StatCard } from '@/components/StatCard';
+import { DataTable } from '@/components/DataTable';
+import { TrendingUp, Users, CreditCard, Smartphone } from 'lucide-react';
+
+const stats = [
+  {
+    title: 'عدد الأرقام',
+    value: '658',
+    change: '+12%',
+    icon: Smartphone,
+    color: 'blue',
+  },
+  {
+    title: 'إجمالي عمليات الشحن',
+    value: '1,284',
+    change: '+8%',
+    icon: TrendingUp,
+    color: 'green',
+  },
+  {
+    title: 'إجمالي المبالغ',
+    value: '23,125.34 DA',
+    change: '+15%',
+    icon: CreditCard,
+    color: 'purple',
+  },
+  {
+    title: 'الرصيد',
+    value: '145,000 DA',
+    change: '+5%',
+    icon: Users,
+    color: 'amber',
+  },
+];
+
+const recentOperations = [
+  {
+    id: 'R-101',
+    phone: '0551234567',
+    network: 'Mobilis',
+    amount: '5,000 DA',
+    user: 'أحمد محمد',
+    time: '10:45',
+    status: 'مكتمل',
+  },
+  {
+    id: 'R-102',
+    phone: '0667654321',
+    network: 'Ooredoo',
+    amount: '2,500 DA',
+    user: 'سونيا علي',
+    time: '11:20',
+    status: 'قيد التنفيذ',
+  },
+  {
+    id: 'R-103',
+    phone: '0772233445',
+    network: 'Djezzy',
+    amount: '12,000 DA',
+    user: 'ياسين كريم',
+    time: '12:15',
+    status: 'مكتمل',
+  },
+  {
+    id: 'R-104',
+    phone: '0561112222',
+    network: 'Mobilis',
+    amount: '3,500 DA',
+    user: 'فاطمة عمر',
+    time: '13:30',
+    status: 'قيد المراجعة',
+  },
+  {
+    id: 'R-105',
+    phone: '0789876543',
+    network: 'Ooredoo',
+    amount: '8,000 DA',
+    user: 'محمود حسن',
+    time: '14:45',
+    status: 'مكتمل',
+  },
+];
+
+export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
-    <main className="min-h-screen bg-[#050816] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 shadow-neon">
-              <Zap className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-bold tracking-wide">ONAA</p>
-              <p className="text-[10px] uppercase tracking-[0.24em] text-slate-400">Marketplace</p>
-            </div>
-          </Link>
+    <div className="space-y-6 p-6">
+      {/* Header Section */}
+      <div>
+        <h1 className="text-3xl font-black text-slate-900">لوحة التحكم الرئيسية</h1>
+        <p className="mt-2 text-sm text-slate-500">مرحباً بك في منصة Volca Flexy - إجمالي نشاط النظام</p>
+      </div>
 
-          <nav className="hidden items-center gap-6 text-sm text-slate-300 md:flex">
-            <Link href="#catalog" className="transition hover:text-white">Catalog</Link>
-            <Link href="#features" className="transition hover:text-white">Features</Link>
-            <Link href="/dashboard" className="transition hover:text-white">Dashboard</Link>
-            <Link href="/admin" className="transition hover:text-white">Admin</Link>
-          </nav>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <StatCard key={stat.title} {...stat} />
+        ))}
+      </div>
 
-          <div className="flex items-center gap-3">
-            <button className="hidden rounded-full border border-white/10 bg-white/5 p-2.5 md:inline-flex">
-              <Search className="h-4 w-4 text-slate-300" />
+      {/* Operations Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Operations */}
+        <div className="lg:col-span-2">
+          <DataTable
+            title="آخر العمليات"
+            columns={['ID', 'الهاتف', 'الشبكة', 'المبلغ', 'المستخدم', 'الوقت', 'الحالة']}
+            rows={recentOperations}
+          />
+        </div>
+
+        {/* Quick Stats Card */}
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-slate-600">معلومات سريعة</h3>
+
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between border-b border-slate-100 pb-3">
+                <span className="text-sm text-slate-600">قيد الانتظار</span>
+                <span className="font-semibold text-slate-900">24</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-3">
+                <span className="text-sm text-slate-600">مكتمل اليوم</span>
+                <span className="font-semibold text-slate-900">156</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-100 pb-3">
+                <span className="text-sm text-slate-600">معدل النجاح</span>
+                <span className="font-semibold text-emerald-600">98.5%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-slate-600">آخر تحديث</span>
+                <span className="font-semibold text-slate-900">الآن</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-2">
+            <button className="w-full rounded-xl bg-cyan-600 px-4 py-3 font-semibold text-white transition hover:bg-cyan-700">
+              عملية شحن جديدة
             </button>
-            <Link href="/checkout" className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-950 transition hover:bg-cyan-400">
-              <ShoppingCart className="h-4 w-4" />
-              Checkout
-            </Link>
+            <button className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 font-semibold text-slate-900 transition hover:bg-slate-50">
+              عرض جميع العمليات
+            </button>
           </div>
         </div>
-      </header>
-
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-grid bg-[size:26px_26px] opacity-30" />
-        <div className="absolute left-1/2 top-20 h-80 w-80 -translate-x-1/2 rounded-full bg-cyan-500/20 blur-3xl" />
-
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.1fr_0.9fr] lg:px-8 lg:py-24">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-300">
-              <Star className="h-3.5 w-3.5" />
-              Instant delivery • 24/7 support
-            </div>
-
-            <h1 className="max-w-xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Top-up your digital life in seconds.
-            </h1>
-
-            <p className="mt-6 max-w-xl text-lg text-slate-300">
-              Buy telecom top-ups, premium subscriptions, digital gift cards, and cloud licenses with instant fulfillment and secure manual payment verification.
-            </p>
-
-            <div className="mt-8 flex flex-wrap gap-4">
-              <Link href="#catalog" className="inline-flex items-center gap-2 rounded-full bg-cyan-500 px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-400">
-                Browse catalog
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/dashboard" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10">
-                My orders
-              </Link>
-            </div>
-
-            <div className="mt-10 grid max-w-xl grid-cols-3 gap-4 text-left">
-              {[
-                { value: '12K+', label: 'Orders delivered' },
-                { value: '99.8%', label: 'Satisfaction' },
-                { value: '2 min', label: 'Avg. delivery' },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
-                  <div className="text-2xl font-black text-white">{stat.value}</div>
-                  <div className="mt-1 text-xs text-slate-400">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-cyan-500/20 bg-slate-900/70 p-6 shadow-neon backdrop-blur-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Trending</p>
-                <h2 className="mt-2 text-2xl font-bold text-white">Quick purchase</h2>
-              </div>
-              <div className="rounded-full bg-emerald-500/15 px-2.5 py-1 text-xs font-medium text-emerald-300">Live</div>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              {featured.map((product) => (
-                <div key={product.id} className="rounded-2xl border border-white/10 bg-slate-950/60 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-white">{product.name}</p>
-                      <p className="mt-1 text-sm text-slate-400">{product.category}</p>
-                    </div>
-                    <span className="rounded-full border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 text-[10px] font-medium uppercase text-cyan-300">
-                      {product.badge}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 flex items-end justify-between">
-                    <div>
-                      <p className="text-xs text-slate-400">Starting from</p>
-                      <p className="text-2xl font-black text-white">${product.variants[0].price}</p>
-                    </div>
-                    <Link href={`/products/${product.slug}`} className="rounded-full bg-white/5 px-3 py-2 text-sm font-medium text-white transition hover:bg-white/10">
-                      View
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="features" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { icon: ShieldCheck, title: 'Secure checkout', text: 'Manual slip verification with instant admin review workflow.' },
-            { icon: Zap, title: 'Faster delivery', text: 'Digital fulfillment and top-up automation across popular services.' },
-            { icon: Sparkles, title: 'Premium inventory', text: 'Well-organized category pages for streaming, gaming, telecom and more.' },
-          ].map(({ icon: Icon, title, text }) => (
-            <div key={title} className="rounded-3xl border border-white/10 bg-white/[0.02] p-6">
-              <div className="mb-4 inline-flex rounded-2xl bg-cyan-500/10 p-3 text-cyan-300">
-                <Icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-xl font-semibold text-white">{title}</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-400">{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section id="catalog" className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
-        <div className="mb-8 flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.2em] text-slate-400">Catalog</p>
-            <h2 className="mt-2 text-3xl font-bold text-white">Explore available services</h2>
-          </div>
-        </div>
-
-        <ProductCatalog products={products} />
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }
